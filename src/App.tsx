@@ -3,37 +3,35 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useState } from 'react';
-import { onAuthStateChanged, isSignInWithEmailLink, signInWithEmailLink } from 'firebase/auth';
-import { auth } from './firebase';
+import { useState, useEffect } from 'react';
 import { Login } from './components/Login';
 import { VotingBallot } from './components/VotingBallot';
 
 export default function App() {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState<{ email: string } | null>(null);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (u) => {
-      if (u) {
-        setUser(u);
-      } else {
-        // Check if email link sign in
-        if (isSignInWithEmailLink(auth, window.location.href)) {
-          let email = window.localStorage.getItem('emailForSignIn');
-          if (!email) {
-            email = window.prompt('Please provide your email for confirmation');
-          }
-          await signInWithEmailLink(auth, email!, window.location.href);
-          window.localStorage.removeItem('emailForSignIn');
-        }
-      }
-    });
-    return unsubscribe;
+    const session = localStorage.getItem('voting_session');
+    if (session) {
+      setUser(JSON.parse(session));
+    }
   }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('voting_session');
+    setUser(null);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      {user ? <VotingBallot /> : <Login />}
+      {user ? (
+        <div className="w-full">
+          <button onClick={handleLogout} className="absolute top-4 right-4 text-sm text-gray-500">Sign Out</button>
+          <VotingBallot user={user} />
+        </div>
+      ) : (
+        <Login onLogin={setUser} />
+      )}
     </div>
   );
 }

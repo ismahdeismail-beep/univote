@@ -1,59 +1,30 @@
-import { useEffect, useState } from 'react';
-import { doc, getDoc, collection, query, where, getDocs, runTransaction, serverTimestamp } from 'firebase/firestore';
-import { auth, db } from '../firebase';
+import { useState, useMemo } from 'react';
+import { voters, candidates } from '../data';
 
-export function VotingBallot() {
-  const [voter, setVoter] = useState<any>(null);
-  const [candidates, setCandidates] = useState<any[]>([]);
+export function VotingBallot({ user }: { user: { email: string } }) {
+  const voter = useMemo(() => voters.find(v => v.email === user.email), [user.email]);
   const [selectedCandidate, setSelectedCandidate] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      if (!auth.currentUser?.email) return;
-      const voterDoc = await getDoc(doc(db, 'voters', auth.currentUser.email));
-      if (voterDoc.exists()) {
-        const voterData = voterDoc.data();
-        setVoter(voterData);
-        // Query candidates by schoolId AND tenantId for isolation
-        const q = query(
-          collection(db, 'candidates'),
-          where('schoolId', '==', voterData.schoolId),
-          where('tenantId', '==', voterData.tenantId)
-        );
-        const candidateDocs = await getDocs(q);
-        setCandidates(candidateDocs.docs.map(d => ({ id: d.id, ...d.data() })));
-      }
-    }
-    fetchData();
-  }, []);
+  const hasVoted = useMemo(() => {
+    const voted = localStorage.getItem(`voted_${user.email}`);
+    return !!voted;
+  }, [user.email]);
 
-  const castVote = async () => {
-    if (!selectedCandidate || !voter || !auth.currentUser?.email) return;
+  const schoolCandidates = useMemo(() => {
+    if (!voter) return [];
+    return candidates.filter(c => c.schoolId === voter.schoolId);
+  }, [voter]);
 
-    try {
-      await runTransaction(db, async (transaction) => {
-        const voterRef = doc(db, 'voters', auth.currentUser!.email!);
-        const ballotRef = doc(collection(db, 'ballots'));
-        
-        transaction.update(voterRef, { hasVoted: true });
-        transaction.set(ballotRef, {
-          tenantId: voter.tenantId, // Ensure tenantId is recorded
-          candidateId: selectedCandidate,
-          schoolId: voter.schoolId,
-          timestamp: serverTimestamp()
-        });
-      });
-      alert('Vote cast successfully!');
-      setVoter({ ...voter, hasVoted: true });
-    } catch (error) {
-      console.error(error);
-      alert('Failed to cast vote.');
-    }
+  const castVote = () => {
+    if (!selectedCandidate) return;
+    localStorage.setItem(`voted_${user.email}`, selectedCandidate);
+    alert('Vote cast successfully!');
+    window.location.reload(); // Refresh to update view
   };
 
-  if (!voter) return <div className="text-center p-10 text-gray-500">Loading...</div>;
-  if (voter.hasVoted) return (
-    <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg text-center">
+  if (!voter) return <div className="text-center p-10 text-gray-500">User not authorized.</div>;
+  if (hasVoted) return (
+    <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg mx-auto text-center">
       <h2 className="text-2xl font-bold text-gray-900">Thank you!</h2>
       <p className="text-gray-600 mt-2">You have already participated in this election.</p>
     </div>
@@ -63,7 +34,7 @@ export function VotingBallot() {
     <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg mx-4">
       <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Cast Your Vote</h2>
       <div className="grid grid-cols-1 gap-4">
-        {candidates.map(c => (
+        {schoolCandidates.map(c => (
           <button
             key={c.id}
             onClick={() => setSelectedCandidate(c.id)}
