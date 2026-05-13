@@ -5,33 +5,36 @@
       "description": "Information about a registered voter.",
       "type": "object",
       "properties": {
+        "tenantId": { "type": "string" },
         "schoolId": { "type": "string" },
         "hasVoted": { "type": "boolean" },
         "isAuthorized": { "type": "boolean" }
       },
-      "required": ["schoolId", "hasVoted", "isAuthorized"]
+      "required": ["tenantId", "schoolId", "hasVoted", "isAuthorized"]
     },
     "candidate": {
       "title": "Candidate",
       "description": "Election candidate information.",
       "type": "object",
       "properties": {
+        "tenantId": { "type": "string" },
         "name": { "type": "string" },
         "schoolId": { "type": "string" },
         "position": { "type": "string" }
       },
-      "required": ["name", "schoolId", "position"]
+      "required": ["tenantId", "name", "schoolId", "position"]
     },
     "ballot": {
       "title": "Ballot",
       "description": "An anonymous vote recording document.",
       "type": "object",
       "properties": {
+        "tenantId": { "type": "string" },
         "candidateId": { "type": "string" },
         "schoolId": { "type": "string" },
         "timestamp": { "type": "string", "format": "date-time" }
       },
-      "required": ["candidateId", "schoolId", "timestamp"]
+      "required": ["tenantId", "candidateId", "schoolId", "timestamp"]
     }
   },
   "firestore": {

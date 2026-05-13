@@ -9,17 +9,20 @@ service cloud.firestore {
 
     // Validation helpers
     function isValidVoter(data) {
-      return data.schoolId is string &&
+      return data.tenantId is string &&
+             data.schoolId is string &&
              data.hasVoted is bool &&
              data.isAuthorized is bool;
     }
     function isValidCandidate(data) {
-      return data.name is string &&
+      return data.tenantId is string &&
+             data.name is string &&
              data.schoolId is string &&
              data.position is string;
     }
     function isValidBallot(data) {
-      return data.candidateId is string &&
+      return data.tenantId is string &&
+             data.candidateId is string &&
              data.schoolId is string &&
              data.timestamp == request.time;
     }
@@ -34,16 +37,18 @@ service cloud.firestore {
                        isValidVoter(incoming()) &&
                        incoming().diff(existing()).affectedKeys().hasOnly(['hasVoted']) &&
                        existing().hasVoted == false &&
-                       incoming().hasVoted == true;
+                       incoming().hasVoted == true &&
+                       incoming().tenantId == existing().tenantId;
     }
 
     match /candidates/{candidateId} {
-      allow read: if isSignedIn();
+      allow read: if isSignedIn() && resource.data.tenantId == get(/databases/$(database)/documents/voters/$(request.auth.token.email)).data.tenantId;
     }
 
     match /ballots/{ballotId} {
       allow create: if isSignedIn() &&
                        isValidBallot(incoming()) &&
+                       incoming().tenantId == get(/databases/$(database)/documents/voters/$(request.auth.token.email)).data.tenantId &&
                        get(/databases/$(database)/documents/voters/$(request.auth.token.email)).data.hasVoted == false &&
                        existsAfter(/databases/$(database)/documents/voters/$(request.auth.token.email));
     }

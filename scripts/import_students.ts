@@ -2,13 +2,12 @@ import * as admin from 'firebase-admin';
 
 // Initialize with application default credentials
 admin.initializeApp({
-  credential: admin.credential.applicationDefault(),
-  databaseURL: 'https://gen-lang-client-0951111323.firebaseio.com' 
+  credential: admin.credential.applicationDefault()
 });
 
 const db = admin.firestore();
 
-async function importStudents(students: { email: string, schoolId: string }[]) {
+async function importStudents(tenantId: string, students: { email: string, schoolId: string }[]) {
   const batch = db.batch();
   for (const student of students) {
     // 1. Create Auth User
@@ -25,6 +24,7 @@ async function importStudents(students: { email: string, schoolId: string }[]) {
     // 2. Set Voter Data
     const voterRef = db.collection('voters').doc(student.email);
     batch.set(voterRef, {
+      tenantId, // Add tenantId
       schoolId: student.schoolId,
       hasVoted: false,
       isAuthorized: true
@@ -40,4 +40,4 @@ const students = [
   { email: 'student2@business.univ.edu', schoolId: 'business' }
 ];
 
-importStudents(students).catch(console.error);
+importStudents('tenant123', students).catch(console.error);

@@ -12,8 +12,14 @@ export function VotingBallot() {
       if (!auth.currentUser?.email) return;
       const voterDoc = await getDoc(doc(db, 'voters', auth.currentUser.email));
       if (voterDoc.exists()) {
-        setVoter(voterDoc.data());
-        const q = query(collection(db, 'candidates'), where('schoolId', '==', voterDoc.data().schoolId));
+        const voterData = voterDoc.data();
+        setVoter(voterData);
+        // Query candidates by schoolId AND tenantId for isolation
+        const q = query(
+          collection(db, 'candidates'),
+          where('schoolId', '==', voterData.schoolId),
+          where('tenantId', '==', voterData.tenantId)
+        );
         const candidateDocs = await getDocs(q);
         setCandidates(candidateDocs.docs.map(d => ({ id: d.id, ...d.data() })));
       }
@@ -31,6 +37,7 @@ export function VotingBallot() {
         
         transaction.update(voterRef, { hasVoted: true });
         transaction.set(ballotRef, {
+          tenantId: voter.tenantId, // Ensure tenantId is recorded
           candidateId: selectedCandidate,
           schoolId: voter.schoolId,
           timestamp: serverTimestamp()
@@ -44,11 +51,16 @@ export function VotingBallot() {
     }
   };
 
-  if (!voter) return <div>Loading...</div>;
-  if (voter.hasVoted) return <div>You have already voted.</div>;
+  if (!voter) return <div className="text-center p-10 text-gray-500">Loading...</div>;
+  if (voter.hasVoted) return (
+    <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg text-center">
+      <h2 className="text-2xl font-bold text-gray-900">Thank you!</h2>
+      <p className="text-gray-600 mt-2">You have already participated in this election.</p>
+    </div>
+  );
 
   return (
-    <div className="bg-white p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg">
+    <div className="bg-white p-6 sm:p-10 rounded-2xl shadow-sm border border-gray-100 w-full max-w-lg mx-4">
       <h2 className="text-2xl font-bold text-gray-900 mb-6 tracking-tight">Cast Your Vote</h2>
       <div className="grid grid-cols-1 gap-4">
         {candidates.map(c => (
@@ -57,7 +69,7 @@ export function VotingBallot() {
             onClick={() => setSelectedCandidate(c.id)}
             className={`w-full text-left p-5 rounded-xl border transition-all duration-200 ${
               selectedCandidate === c.id
-                ? 'border-blue-600 bg-blue-50'
+                ? 'border-blue-600 bg-blue-50 ring-2 ring-blue-600 ring-opacity-20'
                 : 'border-gray-200 hover:border-gray-300 bg-white'
             }`}
           >
