@@ -1,0 +1,6 @@
+{
+  "name": "UniVote Security Gateway",
+  "description": "Secure, multi-tenant electronic voting system for university elections.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

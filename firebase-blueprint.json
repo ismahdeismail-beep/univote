@@ -1,0 +1,51 @@
+{
+  "entities": {
+    "voter": {
+      "title": "Voter",
+      "description": "Information about a registered voter.",
+      "type": "object",
+      "properties": {
+        "schoolId": { "type": "string" },
+        "hasVoted": { "type": "boolean" },
+        "isAuthorized": { "type": "boolean" }
+      },
+      "required": ["schoolId", "hasVoted", "isAuthorized"]
+    },
+    "candidate": {
+      "title": "Candidate",
+      "description": "Election candidate information.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "position": { "type": "string" }
+      },
+      "required": ["name", "schoolId", "position"]
+    },
+    "ballot": {
+      "title": "Ballot",
+      "description": "An anonymous vote recording document.",
+      "type": "object",
+      "properties": {
+        "candidateId": { "type": "string" },
+        "schoolId": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["candidateId", "schoolId", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/voters/{email}": {
+      "schema": "voter",
+      "description": "Voter registry collection by email."
+    },
+    "/candidates/{candidateId}": {
+      "schema": "candidate",
+      "description": "List of candidates."
+    },
+    "/ballots/{ballotId}": {
+      "schema": "ballot",
+      "description": "Collection of anonymous ballots cast by voters."
+    }
+  }
+}
